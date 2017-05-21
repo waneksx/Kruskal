@@ -10,8 +10,12 @@
         this.isDrawing = false;
         this.canCalculate = false;
         var map = {};
+        var tree = [];
         var drawInteration;
         var markerSource = new ol.source.Vector({
+            features: []
+        });
+        var treeSource = new ol.source.Vector({
             features: []
         });
 
@@ -47,6 +51,7 @@
             markerSource.clear();
             self.canCalculate = false;
             self.isDrawing = false;
+            treeSource.clear();
         };
 
         this.initialize = function () {
@@ -62,7 +67,37 @@
         };
 
         this.calculate = function () {
-            alert("you lox")
+            tree = [];
+            markerSource.forEachFeature(function (elementFeature) {
+                markerSource.forEachFeature(function (element) {
+                    var elementFeature = this;
+                    if (arePointsEqual(element, elementFeature)) {
+                        var line = getLine(elementFeature.getGeometry(), element.getGeometry())
+                        var edge = {
+                            Points: [elementFeature, element],
+                            Weight: line.getLength(),
+                            Line : line
+                        };
+
+                        tree.push(edge);
+                        treeSource.addFeature(new ol.Feature(line));
+                    }
+                }, elementFeature);
+            });
+            var result = tree;
+        };
+
+        var getLine = function (firstPoint, secondPoint) {
+            return new ol.geom.LineString([firstPoint.getCoordinates(), secondPoint.getCoordinates()]);
+        };
+
+        var arePointsEqual = function (firstPoint, secondPoint) {
+            var first = firstPoint.getGeometry().getCoordinates();
+            var second = secondPoint.getGeometry().getCoordinates();
+            if ((first[0] != second[0]) && (first[1] != second[1])) {
+                return true;
+            }
+            return false;
         }
 
         var createMap = function () {
@@ -75,6 +110,9 @@
                     }),
                     new ol.layer.Vector({
                         source: markerSource
+                    }),
+                    new ol.layer.Vector({
+                        source: treeSource
                     })
                 ],
                 view: new ol.View({
