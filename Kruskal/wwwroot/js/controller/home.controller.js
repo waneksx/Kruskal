@@ -67,6 +67,13 @@
         };
 
         this.calculate = function () {
+            createTree();
+            tree.sort(function (first, second) {
+                return first.Weight - second.Weight;
+            });
+        };
+
+        var createTree = function () {
             tree = [];
             markerSource.forEachFeature(function (elementFeature) {
                 markerSource.forEachFeature(function (element) {
@@ -74,18 +81,30 @@
                     if (arePointsEqual(element, elementFeature)) {
                         var line = getLine(elementFeature.getGeometry(), element.getGeometry())
                         var edge = {
-                            Points: [elementFeature, element],
+                            U: elementFeature.getGeometry(),
+                            V: element.getGeometry(),
                             Weight: line.getLength(),
-                            Line : line
+                            Line: line
                         };
-
-                        tree.push(edge);
-                        treeSource.addFeature(new ol.Feature(line));
+                        if (!isEdgeInTree(edge)) {
+                            tree.push(edge);
+                            treeSource.addFeature(new ol.Feature(line));
+                        }
                     }
                 }, elementFeature);
             });
-            var result = tree;
-        };
+        }
+
+
+        var isEdgeInTree = function (edge) {
+            var result = false;
+            for (var i = 0; i < tree.length; i++) {
+                if ((tree[i].U == edge.U && tree[i].V == edge.V) || (tree[i].U == edge.V && tree[i].V == edge.U)) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         var getLine = function (firstPoint, secondPoint) {
             return new ol.geom.LineString([firstPoint.getCoordinates(), secondPoint.getCoordinates()]);
